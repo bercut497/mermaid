@@ -792,4 +792,73 @@ describe('when parsing ER diagram it...', function () {
       expect(rels[0].relSpec.cardA).toBe(erDb.Cardinality.ZERO_OR_MORE);
     });
   });
+
+  describe('attribute relationship', function () {
+
+    it('should parse entity and attribute from relationship correctly', function () {
+      erDiagram.parser.parse('erDiagram\r\nPROJECT :: OWNER ||--|{ TEAM_MEMBER :: ID : "parent"');
+      const ents = erDb.getEntities();
+      const entNames = Object.keys(ents);
+      expect(entNames.length).toBe(2);
+      expect(entNames).contain('PROJECT');
+      expect(ents['PROJECT'].attributes.has('OWNER')).toBe(true);
+      expect(entNames).contain('TEAM_MEMBER');
+      expect(ents['TEAM_MEMBER'].attributes.has('ID')).toBe(true);
+    });
+
+
+    it('should keep attribute information', function () {
+      const lines =`erDiagram
+      PROJECT {
+        int OWNER PK
+        str NAME
+      }
+
+      TEAM_MEMBER {
+        int ID PK,UK
+        str NAME
+      }
+
+      PROJECT :: OWNER ||--|{ TEAM_MEMBER :: ID : "parent"
+      `;
+      erDiagram.parser.parse(lines);
+      const entities =erDb.getEntities();
+      const owner = entities['PROJECT'].attributes.get('OWNER');
+      expect(owner.attributeName).toBe('OWNER');
+      expect(owner.attributeType).toBe('int');
+      expect(owner.attributeKeyTypeList).toEqual(['PK']);
+      const member = entities['TEAM_MEMBER'].attributes.get('ID');
+      expect(member.attributeName).toBe('ID');
+      expect(member.attributeType).toBe('int');
+      expect(member.attributeKeyTypeList).toEqual(['PK','UK']);
+    });
+
+    it('should represent attribute relationship correctly', function () {
+      erDiagram.parser.parse('erDiagram\r\nPROJECT :: OWNER ||--|{ TEAM_MEMBER :: ID : "parent"');
+      const rels = erDb.getRelationships();
+      expect(Object.keys(erDb.getEntities()).length).toBe(2);
+      expect(rels.length).toBe(1);
+      const rel = rels[0];
+      expect(rel.relSpec.cardB).toBe(erDb.Cardinality.ONLY_ONE);
+      expect(rel.relSpec.cardA).toBe(erDb.Cardinality.ONE_OR_MORE);
+    });
+
+    it('should allow an empty quoted label', function () {
+      erDiagram.parser.parse('erDiagram\nPROJECT :: OWNER ||--|{ TEAM_MEMBER :: ID : ""');
+      const rels = erDb.getRelationships();
+      expect(rels[0].roleA).toBe('');
+    });
+
+    it('should allow an non-empty quoted label', function () {
+      erDiagram.parser.parse('erDiagram\nPROJECT :: OWNER ||--|{ TEAM_MEMBER :: ID : "places"');
+      const rels = erDb.getRelationships();
+      expect(rels[0].roleA).toBe('places');
+    });
+
+    it('should allow an non-empty unquoted label', function () {
+      erDiagram.parser.parse('erDiagram\nPROJECT :: OWNER ||--|{ TEAM_MEMBER :: ID : places');
+      const rels = erDb.getRelationships();
+      expect(rels[0].roleA).toBe('places');
+    });
+  });
 });

@@ -32,6 +32,7 @@ accDescr\s*"{"\s*                                { this.begin("acc_descr_multili
 <block>.                        return yytext[0];
 "["                             return 'SQS';
 "]"                             return 'SQE';
+"::"                            return 'ATT';
 
 "one or zero"                   return 'ZERO_OR_ONE';
 "one or more"                   return 'ONE_OR_MORE';
@@ -93,6 +94,14 @@ statement
           yy.addEntity($1);
           yy.addEntity($3);
           yy.addRelationship($1, $5, $3, $2);
+      }
+    | entityName ATT entityName relSpec entityName ATT entityName ':' role
+      {
+          yy.addEntity($1);
+          yy.addAttributes($1, [{attributeName: $3}]);
+          yy.addEntity($5);
+          yy.addAttributes($5, [{attributeName: $7}]);
+          yy.addAttrRelationship($1, $3, $9, $5, $7, $4 );
       }
     | entityName BLOCK_START attributes BLOCK_STOP
       {
