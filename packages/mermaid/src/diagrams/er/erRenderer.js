@@ -17,7 +17,6 @@ let conf = {};
 
 // Map so we can look up the id of an entity based on the name
 let entityNameIds = new Map();
-
 /**
  * Allows the top-level API module to inject config specific to this renderer, storing it in the
  * local conf object. Note that generic config still needs to be retrieved using getConfig()
@@ -32,12 +31,105 @@ export const setConf = function (cnf) {
   }
 };
 
+const drawSingleAttribute = function (groupNode, attributeNodes, item, attrPrefix, opts) {
+  const attrFontSize = conf.fontSize * 0.85;
+  const entityName = groupNode.attr('entity-name');
+  let nodeHeight = 0;
+  const rowId = `row-${attrPrefix.replace(/^text-entity/i, 'entity')}`;
+  const rowGroup = groupNode.append('g').attr('id', rowId).attr('x', 0).attr('y', 0);
+
+  const attributeType = parseGenericTypes(item.attributeType || '');
+  entityNameIds.set(`${item.attributeName}.${entityName}`, rowId);
+  // Add a text node for the attribute type
+  const typeNode = rowGroup
+    .append('text')
+    .classed('er entityLabel', true)
+    .attr('id', `${attrPrefix}-type`)
+    .attr('x', 0)
+    .attr('y', 0)
+    .style('dominant-baseline', 'middle')
+    .style('text-anchor', 'left')
+    .style('font-family', getConfig().fontFamily)
+    .style('font-size', attrFontSize + 'px')
+    .text(attributeType);
+
+  // Add a text node for the attribute name
+  const nameNode = rowGroup
+    .append('text')
+    .classed('er entityLabel', true)
+    .attr('id', `${attrPrefix}-name`)
+    .attr('x', 0)
+    .attr('y', 0)
+    .style('dominant-baseline', 'middle')
+    .style('text-anchor', 'left')
+    .style('font-family', getConfig().fontFamily)
+    .style('font-size', attrFontSize + 'px')
+    .text(item.attributeName);
+
+  const attributeNode = {};
+  attributeNode.tn = typeNode;
+  attributeNode.nn = nameNode;
+  attributeNode.row = rowGroup;
+
+  const typeBBox = typeNode.node().getBBox();
+  const nameBBox = nameNode.node().getBBox();
+  opts.maxTypeWidth = Math.max(opts.maxTypeWidth, typeBBox.width);
+  opts.maxNameWidth = Math.max(opts.maxNameWidth, nameBBox.width);
+
+  nodeHeight = Math.max(typeBBox.height, nameBBox.height);
+
+  if (opts.hasKeyType) {
+    const keyTypeNodeText =
+      item.attributeKeyTypeList !== undefined ? item.attributeKeyTypeList.join(',') : '';
+
+    const keyTypeNode = rowGroup
+      .append('text')
+      .classed('er entityLabel', true)
+      .attr('id', `${attrPrefix}-key`)
+      .attr('x', 0)
+      .attr('y', 0)
+      .style('dominant-baseline', 'middle')
+      .style('text-anchor', 'left')
+      .style('font-family', getConfig().fontFamily)
+      .style('font-size', attrFontSize + 'px')
+      .text(keyTypeNodeText);
+
+    attributeNode.kn = keyTypeNode;
+    const keyTypeBBox = keyTypeNode.node().getBBox();
+    opts.maxKeyWidth = Math.max(opts.maxKeyWidth, keyTypeBBox.width);
+    nodeHeight = Math.max(nodeHeight, keyTypeBBox.height);
+  }
+
+  if (opts.hasComment) {
+    const commentNode = rowGroup
+      .append('text')
+      .classed('er entityLabel', true)
+      .attr('id', `${attrPrefix}-comment`)
+      .attr('x', 0)
+      .attr('y', 0)
+      .style('dominant-baseline', 'middle')
+      .style('text-anchor', 'left')
+      .style('font-family', getConfig().fontFamily)
+      .style('font-size', attrFontSize + 'px')
+      .text(item.attributeComment || '');
+
+    attributeNode.cn = commentNode;
+    const commentNodeBBox = commentNode.node().getBBox();
+    opts.maxCommentWidth = Math.max(opts.maxCommentWidth, commentNodeBBox.width);
+    nodeHeight = Math.max(nodeHeight, commentNodeBBox.height);
+  }
+
+  attributeNode.height = nodeHeight;
+  // Keep a reference to the nodes so that we can iterate through them later
+  attributeNodes.push(attributeNode);
+};
+
 /**
  * Draw attributes for an entity
  *
  * @param groupNode The svg group node for the entity
  * @param entityTextNode The svg node for the entity label text
- * @param attributes An array of attributes defined for the entity (each attribute has a type and a
+ * @param attributes An Map of attributes defined for the entity (each attribute has a type and a
  *   name)
  * @returns {object} The bounding box of the entity, after attributes have been added. The bounding
  *   box has a .width and .height
@@ -45,26 +137,33 @@ export const setConf = function (cnf) {
 const drawAttributes = (groupNode, entityTextNode, attributes) => {
   const heightPadding = conf.entityPadding / 3; // Padding internal to attribute boxes
   const widthPadding = conf.entityPadding / 3; // Ditto
-  const attrFontSize = conf.fontSize * 0.85;
   const labelBBox = entityTextNode.node().getBBox();
   const attributeNodes = []; // Intermediate storage for attribute nodes created so that we can do a second pass
-  let hasKeyType = false;
-  let hasComment = false;
-  let maxTypeWidth = 0;
-  let maxNameWidth = 0;
-  let maxKeyWidth = 0;
-  let maxCommentWidth = 0;
+  const opts = {
+    hasKeyType: false,
+    hasComment: false,
+    maxTypeWidth: 0,
+    maxNameWidth: 0,
+    maxKeyWidth: 0,
+    maxCommentWidth: 0,
+  };
+  // let hasKeyType = false;
+  // let hasComment = false;
+  // let maxTypeWidth = 0;
+  // let maxNameWidth = 0;
+  // let maxKeyWidth = 0;
+  // let maxCommentWidth = 0;
   let cumulativeHeight = labelBBox.height + heightPadding * 2;
   let attrNum = 1;
 
   // Check to see if any of the attributes has a key or a comment
   attributes.forEach((item) => {
     if (item.attributeKeyTypeList !== undefined && item.attributeKeyTypeList.length > 0) {
-      hasKeyType = true;
+      opts.hasKeyType = true;
     }
 
     if (item.attributeComment !== undefined) {
-      hasComment = true;
+      opts.hasComment = true;
     }
   });
 
@@ -72,102 +171,21 @@ const drawAttributes = (groupNode, entityTextNode, attributes) => {
     const attrPrefix = `${entityTextNode.node().id}-attr-${attrNum}`;
     let nodeHeight = 0;
 
-    const attributeType = parseGenericTypes(item.attributeType);
+    nodeHeight = drawSingleAttribute(groupNode, attributeNodes, item, attrPrefix, opts);
 
-    // Add a text node for the attribute type
-    const typeNode = groupNode
-      .append('text')
-      .classed('er entityLabel', true)
-      .attr('id', `${attrPrefix}-type`)
-      .attr('x', 0)
-      .attr('y', 0)
-      .style('dominant-baseline', 'middle')
-      .style('text-anchor', 'left')
-      .style('font-family', getConfig().fontFamily)
-      .style('font-size', attrFontSize + 'px')
-      .text(attributeType);
-
-    // Add a text node for the attribute name
-    const nameNode = groupNode
-      .append('text')
-      .classed('er entityLabel', true)
-      .attr('id', `${attrPrefix}-name`)
-      .attr('x', 0)
-      .attr('y', 0)
-      .style('dominant-baseline', 'middle')
-      .style('text-anchor', 'left')
-      .style('font-family', getConfig().fontFamily)
-      .style('font-size', attrFontSize + 'px')
-      .text(item.attributeName);
-
-    const attributeNode = {};
-    attributeNode.tn = typeNode;
-    attributeNode.nn = nameNode;
-
-    const typeBBox = typeNode.node().getBBox();
-    const nameBBox = nameNode.node().getBBox();
-    maxTypeWidth = Math.max(maxTypeWidth, typeBBox.width);
-    maxNameWidth = Math.max(maxNameWidth, nameBBox.width);
-
-    nodeHeight = Math.max(typeBBox.height, nameBBox.height);
-
-    if (hasKeyType) {
-      const keyTypeNodeText =
-        item.attributeKeyTypeList !== undefined ? item.attributeKeyTypeList.join(',') : '';
-
-      const keyTypeNode = groupNode
-        .append('text')
-        .classed('er entityLabel', true)
-        .attr('id', `${attrPrefix}-key`)
-        .attr('x', 0)
-        .attr('y', 0)
-        .style('dominant-baseline', 'middle')
-        .style('text-anchor', 'left')
-        .style('font-family', getConfig().fontFamily)
-        .style('font-size', attrFontSize + 'px')
-        .text(keyTypeNodeText);
-
-      attributeNode.kn = keyTypeNode;
-      const keyTypeBBox = keyTypeNode.node().getBBox();
-      maxKeyWidth = Math.max(maxKeyWidth, keyTypeBBox.width);
-      nodeHeight = Math.max(nodeHeight, keyTypeBBox.height);
-    }
-
-    if (hasComment) {
-      const commentNode = groupNode
-        .append('text')
-        .classed('er entityLabel', true)
-        .attr('id', `${attrPrefix}-comment`)
-        .attr('x', 0)
-        .attr('y', 0)
-        .style('dominant-baseline', 'middle')
-        .style('text-anchor', 'left')
-        .style('font-family', getConfig().fontFamily)
-        .style('font-size', attrFontSize + 'px')
-        .text(item.attributeComment || '');
-
-      attributeNode.cn = commentNode;
-      const commentNodeBBox = commentNode.node().getBBox();
-      maxCommentWidth = Math.max(maxCommentWidth, commentNodeBBox.width);
-      nodeHeight = Math.max(nodeHeight, commentNodeBBox.height);
-    }
-
-    attributeNode.height = nodeHeight;
-    // Keep a reference to the nodes so that we can iterate through them later
-    attributeNodes.push(attributeNode);
     cumulativeHeight += nodeHeight + heightPadding * 2;
     attrNum += 1;
   });
 
   let widthPaddingFactor = 4;
-  if (hasKeyType) {
+  if (opts.hasKeyType) {
     widthPaddingFactor += 2;
   }
-  if (hasComment) {
+  if (opts.hasComment) {
     widthPaddingFactor += 2;
   }
 
-  const maxWidth = maxTypeWidth + maxNameWidth + maxKeyWidth + maxCommentWidth;
+  const maxWidth = opts.maxTypeWidth + opts.maxNameWidth + opts.maxKeyWidth + opts.maxCommentWidth;
 
   // Calculate the new bounding box of the overall entity, now that attributes have been added
   const bBox = {
@@ -179,12 +197,12 @@ const drawAttributes = (groupNode, entityTextNode, attributes) => {
       )
     ),
     height:
-      attributes.length > 0
+      attributes.size > 0
         ? cumulativeHeight
         : Math.max(conf.minEntityHeight, labelBBox.height + conf.entityPadding * 2),
   };
 
-  if (attributes.length > 0) {
+  if (attributes.size > 0) {
     // There might be some spare width for padding out attributes if the entity name is very long
     const spareColumnWidth = Math.max(
       0,
@@ -210,12 +228,12 @@ const drawAttributes = (groupNode, entityTextNode, attributes) => {
 
       // TODO Handle spareWidth in attr('width')
       // Insert a rectangle for the type
-      const typeRect = groupNode
+      const typeRect = attributeNode.row
         .insert('rect', '#' + attributeNode.tn.node().id)
         .classed(`er ${attribStyle}`, true)
         .attr('x', 0)
         .attr('y', heightOffset)
-        .attr('width', maxTypeWidth + widthPadding * 2 + spareColumnWidth)
+        .attr('width', opts.maxTypeWidth + widthPadding * 2 + spareColumnWidth)
         .attr('height', attributeNode.height + heightPadding * 2);
 
       const nameXOffset = parseFloat(typeRect.attr('x')) + parseFloat(typeRect.attr('width'));
@@ -227,18 +245,18 @@ const drawAttributes = (groupNode, entityTextNode, attributes) => {
       );
 
       // Insert a rectangle for the name
-      const nameRect = groupNode
+      const nameRect = attributeNode.row
         .insert('rect', '#' + attributeNode.nn.node().id)
         .classed(`er ${attribStyle}`, true)
         .attr('x', nameXOffset)
         .attr('y', heightOffset)
-        .attr('width', maxNameWidth + widthPadding * 2 + spareColumnWidth)
+        .attr('width', opts.maxNameWidth + widthPadding * 2 + spareColumnWidth)
         .attr('height', attributeNode.height + heightPadding * 2);
 
       let keyTypeAndCommentXOffset =
         parseFloat(nameRect.attr('x')) + parseFloat(nameRect.attr('width'));
 
-      if (hasKeyType) {
+      if (opts.hasKeyType) {
         // Position the key type attribute
         attributeNode.kn.attr(
           'transform',
@@ -246,19 +264,19 @@ const drawAttributes = (groupNode, entityTextNode, attributes) => {
         );
 
         // Insert a rectangle for the key type
-        const keyTypeRect = groupNode
+        const keyTypeRect = attributeNode.row
           .insert('rect', '#' + attributeNode.kn.node().id)
           .classed(`er ${attribStyle}`, true)
           .attr('x', keyTypeAndCommentXOffset)
           .attr('y', heightOffset)
-          .attr('width', maxKeyWidth + widthPadding * 2 + spareColumnWidth)
+          .attr('width', opts.maxKeyWidth + widthPadding * 2 + spareColumnWidth)
           .attr('height', attributeNode.height + heightPadding * 2);
 
         keyTypeAndCommentXOffset =
           parseFloat(keyTypeRect.attr('x')) + parseFloat(keyTypeRect.attr('width'));
       }
 
-      if (hasComment) {
+      if (opts.hasComment) {
         // Position the comment attribute
         attributeNode.cn.attr(
           'transform',
@@ -266,12 +284,12 @@ const drawAttributes = (groupNode, entityTextNode, attributes) => {
         );
 
         // Insert a rectangle for the comment
-        groupNode
+        attributeNode.row
           .insert('rect', '#' + attributeNode.cn.node().id)
           .classed(`er ${attribStyle}`, 'true')
           .attr('x', keyTypeAndCommentXOffset)
           .attr('y', heightOffset)
-          .attr('width', maxCommentWidth + widthPadding * 2 + spareColumnWidth)
+          .attr('width', opts.maxCommentWidth + widthPadding * 2 + spareColumnWidth)
           .attr('height', attributeNode.height + heightPadding * 2);
       }
 
@@ -309,7 +327,7 @@ const drawEntities = function (svgNode, entities, graph) {
     entityNameIds.set(entityName, entityId);
 
     // Create a group for each entity
-    const groupNode = svgNode.append('g').attr('id', entityId);
+    const groupNode = svgNode.append('g').attr('id', entityId).attr('entity-name', entityName);
 
     firstOne = firstOne === undefined ? entityId : firstOne;
 
@@ -379,10 +397,13 @@ const adjustEntities = function (svgNode, graph) {
  *
  * @param rel - A (parsed) relationship (e.g. one of the objects in the list returned by
  *   erDb.getRelationships)
+ *  {entityA:str, entityB:str, roleA, attributeA?:str, attributeB?:str}
  * @returns {string}
  */
 const getEdgeName = function (rel) {
-  return (rel.entityA + rel.roleA + rel.entityB).replace(/\s/g, '');
+  const attA = rel.attributeA || '';
+  const attB = rel.attributeB || '';
+  return (rel.entityA + attA + rel.roleA + rel.entityB + attB).replace(/\s/g, '');
 };
 
 /**
@@ -394,12 +415,16 @@ const getEdgeName = function (rel) {
  */
 const addRelationships = function (relationships, g) {
   relationships.forEach(function (r) {
-    g.setEdge(
-      entityNameIds.get(r.entityA),
-      entityNameIds.get(r.entityB),
-      { relationship: r },
-      getEdgeName(r)
-    );
+    let nameA = entityNameIds.get(r.entityA);
+    if (r.attributeA) {
+      nameA = entityNameIds.get(`${r.entityA}.${r.attributeA}`);
+    }
+    let nameB = entityNameIds.get(r.entityB);
+    if (r.attributeB) {
+      nameB = entityNameIds.get(`${r.entityB}.${r.attributeB}`);
+    }
+
+    g.setEdge(nameA, nameB, { relationship: r }, getEdgeName(r));
   });
   return relationships;
 }; // addRelationships
