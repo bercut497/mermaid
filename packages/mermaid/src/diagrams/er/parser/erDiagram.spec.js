@@ -192,10 +192,11 @@ describe('when parsing ER diagram it...', function () {
       const entities = erDb.getEntities();
 
       expect(Object.keys(entities).length).toBe(1);
-      expect(entities[entity].attributes.length).toBe(3);
-      expect(entities[entity].attributes[0].attributeName).toBe('myBookTitle');
-      expect(entities[entity].attributes[1].attributeName).toBe('MYBOOKSUBTITLE_1');
-      expect(entities[entity].attributes[2].attributeName).toBe('author-ref[name](1)');
+      expect(entities[entity].attributes.size).toBe(3);
+      const attributes = [...entities[entity].attributes.values()];
+      expect(attributes[0].attributeName).toBe('myBookTitle');
+      expect(attributes[1].attributeName).toBe('MYBOOKSUBTITLE_1');
+      expect(attributes[2].attributeName).toBe('author-ref[name](1)');
     });
 
     it('should allow asterisk at the start of attribute name', function () {
@@ -205,7 +206,7 @@ describe('when parsing ER diagram it...', function () {
       erDiagram.parser.parse(`erDiagram\n${entity}{\n${attribute}}`);
       const entities = erDb.getEntities();
       expect(Object.keys(entities).length).toBe(1);
-      expect(entities[entity].attributes.length).toBe(1);
+      expect(entities[entity].attributes.size).toBe(1);
     });
 
     it('should allow asterisks at the start of attribute declared with type and name', () => {
@@ -215,7 +216,7 @@ describe('when parsing ER diagram it...', function () {
       erDiagram.parser.parse(`erDiagram\n${entity} {\n${attribute}}`);
       const entities = erDb.getEntities();
       expect(Object.keys(entities).length).toBe(1);
-      expect(entities[entity].attributes.length).toBe(1);
+      expect(entities[entity].attributes.size).toBe(1);
     });
 
     it('should not allow leading numbers, dashes or brackets', function () {
@@ -237,7 +238,7 @@ describe('when parsing ER diagram it...', function () {
     erDiagram.parser.parse(`erDiagram\n${entity} {\n${attribute}\n}`);
     const entities = erDb.getEntities();
     expect(Object.keys(entities).length).toBe(1);
-    expect(entities[entity].attributes.length).toBe(1);
+    expect(entities[entity].attributes.size).toBe(1);
   });
 
   it('should allow an entity with a single attribute to be defined with a key', function () {
@@ -247,7 +248,7 @@ describe('when parsing ER diagram it...', function () {
     erDiagram.parser.parse(`erDiagram\n${entity} {\n${attribute}\n}`);
     const entities = erDb.getEntities();
     expect(Object.keys(entities).length).toBe(1);
-    expect(entities[entity].attributes.length).toBe(1);
+    expect(entities[entity].attributes.size).toBe(1);
   });
 
   it('should allow an entity with a single attribute to be defined with a comment', function () {
@@ -257,8 +258,9 @@ describe('when parsing ER diagram it...', function () {
     erDiagram.parser.parse(`erDiagram\n${entity} {\n${attribute}\n}`);
     const entities = erDb.getEntities();
     expect(Object.keys(entities).length).toBe(1);
-    expect(entities[entity].attributes.length).toBe(1);
-    expect(entities[entity].attributes[0].attributeComment).toBe('comment');
+    expect(entities[entity].attributes.size).toBe(1);
+    const attributes = [...entities[entity].attributes.values()];
+    expect(attributes[0].attributeComment).toBe('comment');
   });
 
   it('should allow an entity with a single attribute to be defined with a key and a comment', function () {
@@ -268,7 +270,7 @@ describe('when parsing ER diagram it...', function () {
     erDiagram.parser.parse(`erDiagram\n${entity} {\n${attribute}\n}`);
     const entities = erDb.getEntities();
     expect(Object.keys(entities).length).toBe(1);
-    expect(entities[entity].attributes.length).toBe(1);
+    expect(entities[entity].attributes.size).toBe(1);
   });
 
   it('should allow an entity with attribute starting with fk, pk or uk and a comment', function () {
@@ -282,7 +284,7 @@ describe('when parsing ER diagram it...', function () {
       `erDiagram\n${entity} {\n${attribute1} \n\n${attribute2}\n${attribute3}\n${attribute4}\n}`
     );
     const entities = erDb.getEntities();
-    expect(entities[entity].attributes.length).toBe(4);
+    expect(entities[entity].attributes.size).toBe(4);
   });
 
   it('should allow an entity with attributes that have many constraints and comments', function () {
@@ -297,14 +299,15 @@ describe('when parsing ER diagram it...', function () {
       `erDiagram\n${entity} {\n${attribute1}\n${attribute2}\n${attribute3}\n${attribute4}\n${attribute5}\n}`
     );
     const entities = erDb.getEntities();
-    expect(entities[entity].attributes[0].attributeKeyTypeList).toEqual(['PK', 'FK']);
-    expect(entities[entity].attributes[0].attributeComment).toBe('comment1');
-    expect(entities[entity].attributes[1].attributeKeyTypeList).toEqual(['PK', 'UK', 'FK']);
-    expect(entities[entity].attributes[2].attributeKeyTypeList).toEqual(['PK', 'UK']);
-    expect(entities[entity].attributes[2].attributeComment).toBe('comment3');
-    expect(entities[entity].attributes[3].attributeKeyTypeList).toBeUndefined();
-    expect(entities[entity].attributes[4].attributeKeyTypeList).toBeUndefined();
-    expect(entities[entity].attributes[4].attributeComment).toBe('comment5');
+    const attributes = [...entities[entity].attributes.values()];
+    expect(attributes[0].attributeKeyTypeList).toEqual(['PK', 'FK']);
+    expect(attributes[0].attributeComment).toBe('comment1');
+    expect(attributes[1].attributeKeyTypeList).toEqual(['PK', 'UK', 'FK']);
+    expect(attributes[2].attributeKeyTypeList).toEqual(['PK', 'UK']);
+    expect(attributes[2].attributeComment).toBe('comment3');
+    expect(attributes[3].attributeKeyTypeList).toBeUndefined();
+    expect(attributes[4].attributeKeyTypeList).toBeUndefined();
+    expect(attributes[4].attributeComment).toBe('comment5');
   });
 
   it('should allow an entity with attribute that has a generic type', function () {
@@ -318,7 +321,7 @@ describe('when parsing ER diagram it...', function () {
     );
     const entities = erDb.getEntities();
     expect(Object.keys(entities).length).toBe(1);
-    expect(entities[entity].attributes.length).toBe(3);
+    expect(entities[entity].attributes.size).toBe(3);
   });
 
   it('should allow an entity with attribute that is an array', function () {
@@ -329,7 +332,7 @@ describe('when parsing ER diagram it...', function () {
     erDiagram.parser.parse(`erDiagram\n${entity} {\n${attribute1}\n${attribute2}\n}`);
     const entities = erDb.getEntities();
     expect(Object.keys(entities).length).toBe(1);
-    expect(entities[entity].attributes.length).toBe(2);
+    expect(entities[entity].attributes.size).toBe(2);
   });
 
   it('should allow an entity with attribute that is a limited length string', function () {
@@ -340,9 +343,10 @@ describe('when parsing ER diagram it...', function () {
     erDiagram.parser.parse(`erDiagram\n${entity} {\n${attribute1}\n${attribute2}\n}`);
     const entities = erDb.getEntities();
     expect(Object.keys(entities).length).toBe(1);
-    expect(entities[entity].attributes.length).toBe(2);
-    expect(entities[entity].attributes[0].attributeType).toBe('character(10)');
-    expect(entities[entity].attributes[1].attributeType).toBe('varchar(5)');
+    expect(entities[entity].attributes.size).toBe(2);
+    const attributes = [...entities[entity].attributes.values()];
+    expect(attributes[0].attributeType).toBe('character(10)');
+    expect(attributes[1].attributeType).toBe('varchar(5)');
   });
 
   it('should allow an entity with multiple attributes to be defined', function () {
@@ -355,7 +359,7 @@ describe('when parsing ER diagram it...', function () {
       `erDiagram\n${entity} {\n${attribute1}\n${attribute2}\n${attribute3}\n}`
     );
     const entities = erDb.getEntities();
-    expect(entities[entity].attributes.length).toBe(3);
+    expect(entities[entity].attributes.size).toBe(3);
   });
 
   it('should allow attribute definitions to be split into multiple blocks', function () {
@@ -368,7 +372,7 @@ describe('when parsing ER diagram it...', function () {
       `erDiagram\n${entity} {\n${attribute1}\n}\n${entity} {\n${attribute2}\n${attribute3}\n}`
     );
     const entities = erDb.getEntities();
-    expect(entities[entity].attributes.length).toBe(3);
+    expect(entities[entity].attributes.size).toBe(3);
   });
 
   it('should allow an empty attribute block', function () {
@@ -377,7 +381,7 @@ describe('when parsing ER diagram it...', function () {
     erDiagram.parser.parse(`erDiagram\n${entity} {}`);
     const entities = erDb.getEntities();
     expect(entities.hasOwnProperty('BOOK')).toBe(true);
-    expect(entities[entity].attributes.length).toBe(0);
+    expect(entities[entity].attributes.size).toBe(0);
   });
 
   it('should allow an attribute block to start immediately after the entity name', function () {
@@ -386,7 +390,7 @@ describe('when parsing ER diagram it...', function () {
     erDiagram.parser.parse(`erDiagram\n${entity}{}`);
     const entities = erDb.getEntities();
     expect(entities.hasOwnProperty('BOOK')).toBe(true);
-    expect(entities[entity].attributes.length).toBe(0);
+    expect(entities[entity].attributes.size).toBe(0);
   });
 
   it('should allow an attribute block to be separated from the entity name by spaces', function () {
@@ -395,7 +399,7 @@ describe('when parsing ER diagram it...', function () {
     erDiagram.parser.parse(`erDiagram\n${entity}         {}`);
     const entities = erDb.getEntities();
     expect(entities.hasOwnProperty('BOOK')).toBe(true);
-    expect(entities[entity].attributes.length).toBe(0);
+    expect(entities[entity].attributes.size).toBe(0);
   });
 
   it('should allow whitespace before and after attribute definitions', function () {
@@ -405,7 +409,7 @@ describe('when parsing ER diagram it...', function () {
     erDiagram.parser.parse(`erDiagram\n${entity} {\n  \n\n  ${attribute}\n\n  \n}`);
     const entities = erDb.getEntities();
     expect(Object.keys(entities).length).toBe(1);
-    expect(entities[entity].attributes.length).toBe(1);
+    expect(entities[entity].attributes.size).toBe(1);
   });
 
   it('should allow no whitespace before and after attribute definitions', function () {
@@ -415,7 +419,7 @@ describe('when parsing ER diagram it...', function () {
     erDiagram.parser.parse(`erDiagram\n${entity}{${attribute}}`);
     const entities = erDb.getEntities();
     expect(Object.keys(entities).length).toBe(1);
-    expect(entities[entity].attributes.length).toBe(1);
+    expect(entities[entity].attributes.size).toBe(1);
   });
 
   it('should associate two entities correctly', function () {
@@ -794,7 +798,6 @@ describe('when parsing ER diagram it...', function () {
   });
 
   describe('attribute relationship', function () {
-
     it('should parse entity and attribute from relationship correctly', function () {
       erDiagram.parser.parse('erDiagram\r\nPROJECT :: OWNER ||--|{ TEAM_MEMBER :: ID : "parent"');
       const ents = erDb.getEntities();
@@ -806,9 +809,8 @@ describe('when parsing ER diagram it...', function () {
       expect(ents['TEAM_MEMBER'].attributes.has('ID')).toBe(true);
     });
 
-
     it('should keep attribute information', function () {
-      const lines =`erDiagram
+      const lines = `erDiagram
       PROJECT {
         int OWNER PK
         str NAME
@@ -822,7 +824,7 @@ describe('when parsing ER diagram it...', function () {
       PROJECT :: OWNER ||--|{ TEAM_MEMBER :: ID : "parent"
       `;
       erDiagram.parser.parse(lines);
-      const entities =erDb.getEntities();
+      const entities = erDb.getEntities();
       const owner = entities['PROJECT'].attributes.get('OWNER');
       expect(owner.attributeName).toBe('OWNER');
       expect(owner.attributeType).toBe('int');
@@ -830,7 +832,7 @@ describe('when parsing ER diagram it...', function () {
       const member = entities['TEAM_MEMBER'].attributes.get('ID');
       expect(member.attributeName).toBe('ID');
       expect(member.attributeType).toBe('int');
-      expect(member.attributeKeyTypeList).toEqual(['PK','UK']);
+      expect(member.attributeKeyTypeList).toEqual(['PK', 'UK']);
     });
 
     it('should represent attribute relationship correctly', function () {

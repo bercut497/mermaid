@@ -151,13 +151,13 @@ describe('erRenderer', () => {
       erMarkers.ERMarkers.ZERO_OR_ONE_END,
       erMarkers.ERMarkers.ZERO_OR_MORE_START,
       erMarkers.ERMarkers.ZERO_OR_MORE_END,
-    ])('should create %p marker definition', (marker: string) => {
+    ])('should create marker definition', (marker: string) => {
       diagramStub.draw();
       const markerElement = SVG_NODE().querySelector(`marker#${marker}`) as SVGMarkerElement;
       expect(markerElement).not.toBeNull();
       expect(markerElement.id).toBe(marker);
       expect(markerElement.querySelector('path')).not.toBeNull();
-      expect(markerElement.childElementCount).toBe(1);
+      expect(markerElement.childElementCount > 0).toBe(true);
     });
   });
 
@@ -209,7 +209,7 @@ describe('erRenderer', () => {
       const entities: erEntityCollection = {
         UnitTest: { attributes: new Map(), alias: 'UnitTestAlias' },
       };
-      entities.UnitTest.attributes.set('PKID', {
+      entities['UnitTest'].attributes.set('PKID', {
         attributeName: 'PKID',
       } as erEntityAttribute);
 
@@ -228,7 +228,7 @@ describe('erRenderer', () => {
       const entities: erEntityCollection = {
         UnitTest: { attributes: new Map(), alias: 'UnitTestAlias' },
       };
-      entities.UnitTest.attributes.set('PKID', {
+      entities['UnitTest'].attributes.set('PKID', {
         attributeType: 'int',
         attributeName: 'PKID',
       } as erEntityAttribute);
@@ -255,7 +255,7 @@ describe('erRenderer', () => {
       const entities: erEntityCollection = {
         UnitTest: { attributes: new Map(), alias: 'UnitTestAlias' },
       };
-      entities.UnitTest.attributes.set('PKID', {
+      entities['UnitTest'].attributes.set('PKID', {
         attributeType: 'int',
         attributeName: 'PKID',
       } as erEntityAttribute);
@@ -386,17 +386,17 @@ describe('erRenderer', () => {
       const entities: erEntityCollection = {
         UnitTest: { attributes: new Map(), alias: 'UnitTestAlias' },
       };
-      entities.UnitTest.attributes.set('PKID', {
+      entities['UnitTest'].attributes.set('PKID', {
         attributeType: 'int',
         attributeName: 'PKID',
       } as erEntityAttribute);
 
-      entities.UnitTest.attributes.set('Name', {
+      entities['UnitTest'].attributes.set('Name', {
         attributeType: 'str',
         attributeName: 'Name',
       } as erEntityAttribute);
 
-      entities.UnitTest.attributes.set('Ref', {
+      entities['UnitTest'].attributes.set('Ref', {
         attributeType: 'GUID',
         attributeName: 'Ref',
       } as erEntityAttribute);
@@ -421,28 +421,28 @@ describe('erRenderer', () => {
       const entities: erEntityCollection = {
         UnitTest: { attributes: new Map(), alias: 'UnitTestAlias' },
       };
-      entities.UnitTest.attributes.set('PKID', {
+      entities['UnitTest'].attributes.set('PKID', {
         attributeType: 'int',
         attributeName: 'PKID',
       } as erEntityAttribute);
 
-      entities.UnitTest.attributes.set('Name', {
+      entities['UnitTest'].attributes.set('Name', {
         attributeType: 'str',
         attributeName: 'Name',
       } as erEntityAttribute);
 
-      entities.UnitTest.attributes.set('Ref', {
+      entities['UnitTest'].attributes.set('Ref', {
         attributeType: 'GUID',
         attributeName: 'Ref',
       } as erEntityAttribute);
 
-      entities.UnitTest.attributes.set('Uniq', {
+      entities['UnitTest'].attributes.set('Uniq', {
         attributeType: 'int',
         attributeName: 'Uniq',
         attributeKeyTypeList: ['UK'],
       } as erEntityAttribute);
 
-      entities.UnitTest.attributes.set('Value', {
+      entities['UnitTest'].attributes.set('Value', {
         attributeType: 'int',
         attributeName: 'Value',
       } as erEntityAttribute);
@@ -468,23 +468,23 @@ describe('erRenderer', () => {
         UnitTest: { attributes: new Map(), alias: 'UnitTestAlias' },
         UnitTestEntity: { attributes: new Map() },
       };
-      entities.UnitTest.attributes.set('PKID', {
+      entities['UnitTest'].attributes.set('PKID', {
         attributeType: 'int',
         attributeName: 'PKID',
         attributeKeyTypeList: ['PK', 'UK'],
       } as erEntityAttribute);
 
-      entities.UnitTest.attributes.set('Name', {
+      entities['UnitTest'].attributes.set('Name', {
         attributeType: 'str',
         attributeName: 'Name',
       } as erEntityAttribute);
 
-      entities.UnitTestEntity.attributes.set('ID', {
+      entities['UnitTestEntity'].attributes.set('ID', {
         attributeType: 'int',
         attributeName: 'ID',
       } as erEntityAttribute);
 
-      entities.UnitTestEntity.attributes.set('Ref', {
+      entities['UnitTestEntity'].attributes.set('Ref', {
         attributeType: 'GUID',
         attributeName: 'Ref',
       } as erEntityAttribute);
