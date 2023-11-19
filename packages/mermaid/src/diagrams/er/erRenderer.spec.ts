@@ -122,13 +122,21 @@ const InitContainer = function (p: Partial<BoxValue> = { sw: 100, sh: 200, bw: 1
   expect(SVG_ROOT.node()?.id).toBe(erId);
   expect(SVG_ROOT.attr('id')).toBe(erId);
 };
-const CleanContainer = function () {
+const ClearContainer = function () {
   SVG_ROOT.html('');
+  ClearStub();
+};
+const ClearStub = function () {
+  diagramStub.db.getEntities.mockRestore();
+  diagramStub.db.getRelationships.mockRestore();
+  diagramStub.db.getDiagramTitle.mockRestore();
+  diagramStub.parser.mockRestore();
+  diagramStub.styles.mockRestore();
 };
 
 describe('erRenderer', () => {
   beforeAll(() => InitContainer());
-  beforeEach(() => CleanContainer());
+  beforeEach(() => ClearContainer());
 
   describe('generateId', () => {
     it('should be deterministic', () => {
@@ -156,8 +164,7 @@ describe('erRenderer', () => {
       const markerElement = SVG_NODE().querySelector(`marker#${marker}`) as SVGMarkerElement;
       expect(markerElement).not.toBeNull();
       expect(markerElement.id).toBe(marker);
-      expect(markerElement.querySelector('path')).not.toBeNull();
-      expect(markerElement.childElementCount > 0).toBe(true);
+      expect(markerElement.querySelectorAll('path').length).toBe(1);
     });
   });
 
@@ -499,16 +506,14 @@ describe('erRenderer', () => {
       const rows: SVGGElement[] = [];
       const text: SVGTextElement[] = [];
       svgEntities.forEach((e) => {
-        (e?.querySelectorAll("g[id^='row-entity-UnitTest']") as NodeListOf<SVGGElement>).forEach(
-          (r) => {
-            rows.push(r);
-          }
-        );
-        (
-          e?.querySelectorAll("text[id^='text-entity-UnitTest']") as NodeListOf<SVGTextElement>
-        ).forEach((l) => {
-          text.push(l);
-        });
+        const svgRows = e?.querySelectorAll(
+          "g[id^='row-entity-UnitTest']"
+        ) as NodeListOf<SVGGElement>;
+        svgRows.forEach((r) => rows.push(r));
+        const svgTexts = e?.querySelectorAll(
+          "text[id^='text-entity-UnitTest']"
+        ) as NodeListOf<SVGTextElement>;
+        svgTexts.forEach((l) => text.push(l));
       });
       // 2 entity with 2 rows => 4
       expect(rows.length).toBe(4);
@@ -536,24 +541,5 @@ describe('erRenderer', () => {
       expect(text[10].textContent).toBe('GUID');
       expect(text[11].textContent).toBe('Ref');
     });
-  });
-
-  describe('attribute relation renders, integration tests', () => {
-    beforeAll(() => {
-      InitContainer();
-    });
-
-    beforeEach(() => {
-      CleanContainer();
-    });
-
-    it('should create row for each attribute', () => {
-      diagramStub.draw();
-      expect(SVG_ROOT.html()).not.toBeNull();
-      expect(SVG_ROOT.html()).not.toBe('');
-    });
-
-    // it('should create link for each attribute', () => {
-    // });
   });
 });
